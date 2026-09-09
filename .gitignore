@@ -1,0 +1,14 @@
+.venv/
+.build_venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+build/
+build_*/
+dist_*/
+dist/
+*.spec
+output/*.csv
+output/*.json
+output/*.png
+!output/.gitkeep
