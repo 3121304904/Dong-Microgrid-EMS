@@ -14,7 +14,7 @@ if %errorlevel%==0 (
     goto :end
 )
 
-echo [Dong v1.3] No Python environment was found.
+echo [Dong v1.4] No Python environment was found.
 echo Please run setup.bat first, then start run.bat again.
 pause
 

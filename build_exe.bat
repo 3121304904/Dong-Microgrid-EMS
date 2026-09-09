@@ -35,6 +35,6 @@ xcopy /E /I /Y "sample_data" "dist\DongMicrogridEMS\sample_data" >nul
 xcopy /E /I /Y "docs" "dist\DongMicrogridEMS\docs" >nul
 if not exist "dist\DongMicrogridEMS\output" mkdir "dist\DongMicrogridEMS\output"
 
-echo [Dong v1.3] Build completed: dist\DongMicrogridEMS\DongMicrogridEMS.exe
+echo [Dong v1.4] Build completed: dist\DongMicrogridEMS\DongMicrogridEMS.exe
 pause
 endlocal

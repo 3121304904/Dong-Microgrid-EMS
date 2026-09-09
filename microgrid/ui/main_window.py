@@ -53,6 +53,7 @@ from .animations import animate_sections, fade_in, install_button_feedback, inst
 from .lab_page import LabPage
 from .replay_page import ReplayPage
 from .report_page import ReportPage
+from .rolling_page import RollingPage
 from .theme import APP_STYLE, COLORS
 from .topology import TopologyView
 
@@ -101,7 +102,7 @@ class MainWindow(QMainWindow):
         self._analysis_invalidated = True
         self._building = True
 
-        self.setWindowTitle("Dong 微电网能源管理系统 v1.3")
+        self.setWindowTitle("Dong 微电网能源管理系统 v1.4")
         self.setMinimumSize(1180, 760)
         self.resize(1500, 920)
         self.setStyleSheet(APP_STYLE)
@@ -267,6 +268,7 @@ class MainWindow(QMainWindow):
         self.strategy_combo = QComboBox()
         self.strategy_combo.addItem("确定性调度 P50", "deterministic")
         self.strategy_combo.addItem("风险感知调度 P下界", "risk_aware")
+        self.strategy_combo.addItem("滚动预测调度（4h MPC）", "rolling_predictive")
         self.strategy_combo.currentIndexChanged.connect(self.on_strategy_view_changed)
         strategy_layout.addWidget(self.strategy_combo)
         strategy_layout.addWidget(self._field_label("光伏置信度"))
@@ -284,7 +286,7 @@ class MainWindow(QMainWindow):
         strategy_layout.addLayout(confidence_row)
         run_button = QPushButton("运行全天调度")
         run_button.setObjectName("primaryButton")
-        run_button.setToolTip("计算确定性与风险感知两套策略（Ctrl+R）")
+        run_button.setToolTip("计算确定性、风险感知和滚动预测三套策略（Ctrl+R）")
         run_button.clicked.connect(self.run_dispatch)
         strategy_layout.addWidget(run_button)
         layout.addWidget(strategy)
@@ -330,6 +332,8 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self._build_overview_tab(), "运行总览")
         self.replay_page = ReplayPage()
         self.tabs.addTab(self.replay_page, "实时仿真")
+        self.rolling_page = RollingPage()
+        self.tabs.addTab(self.rolling_page, "滚动调度中心")
         self.tabs.addTab(self._build_topology_tab(), "微电网拓扑")
         self.tabs.addTab(self._build_comparison_tab(), "策略对比")
         self.lab_page = LabPage()
@@ -396,17 +400,17 @@ class MainWindow(QMainWindow):
         panel.setObjectName("chartPanel")
         inner = QVBoxLayout(panel)
         inner.setContentsMargins(14, 12, 14, 10)
-        title = QLabel("确定性策略与风险感知策略")
+        title = QLabel("日前计划与滚动调度策略")
         title.setObjectName("sectionTitle")
         inner.addWidget(title)
-        description = QLabel("两套策略使用同一组光伏实测误差执行，以实际成本、购电量和碳排放进行公平对比。")
+        description = QLabel("三套策略使用同一组光伏实测曲线执行：确定性 P50、风险感知 P下界，以及每小时更新预测并重调度的滚动预测策略。")
         description.setObjectName("muted")
         description.setWordWrap(True)
         inner.addWidget(description)
         self.comparison_chart = ComparisonChart()
         inner.addWidget(self.comparison_chart)
         self.comparison_table = QTableWidget(0, 4)
-        self.comparison_table.setHorizontalHeaderLabels(["指标", "确定性 P50", "风险感知", "差值（风险-确定）"])
+        self.comparison_table.setHorizontalHeaderLabels(["指标", "确定性 P50", "风险感知", "滚动预测 4h"])
         self.comparison_table.verticalHeader().setVisible(False)
         self.comparison_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.comparison_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -466,12 +470,12 @@ class MainWindow(QMainWindow):
 
     def _refresh_window_title(self) -> None:
         marker = " *" if self.modified else ""
-        self.setWindowTitle(f"{self.project_name}{marker} - Dong 微电网能源管理系统 v1.3")
+        self.setWindowTitle(f"{self.project_name}{marker} - Dong 微电网能源管理系统 v1.4")
         if hasattr(self, "project_meta"):
             state = "未保存" if self.modified else "已保存"
             if self.project_path is None and not self.modified:
                 state = "新项目"
-                self.project_meta.setText(f"{self.project_name}{marker}  |  {state}  |  v1.3")
+                self.project_meta.setText(f"{self.project_name}{marker}  |  {state}  |  v1.4")
 
     def _set_modified(self, modified: bool = True) -> None:
         if self._building:
@@ -591,6 +595,7 @@ class MainWindow(QMainWindow):
             self.current_result = self.results[self.strategy_combo.currentData()]
             self._render_current_result()
             self._render_comparison()
+            self.rolling_page.set_result(self.results["rolling_predictive"])
             animate_sections(self.tabs.currentWidget(), delay_ms=24)
             fade_in(self.dispatch_chart, 210)
             pulse(self.status_label, 150)
@@ -621,7 +626,7 @@ class MainWindow(QMainWindow):
         m = result.metrics
         deterministic = self.results.get("deterministic")
         delta_hint = "实际执行值"
-        if deterministic and result.strategy_key == "risk_aware":
+        if deterministic and result.strategy_key in {"risk_aware", "rolling_predictive"}:
             delta = m["total_cost_yuan"] - deterministic.metrics["total_cost_yuan"]
             delta_hint = f"较确定性 {delta:+.1f} 元"
         self.kpi_cost.set_data(f"¥ {m['total_cost_yuan']:.1f}", delta_hint)
@@ -642,6 +647,7 @@ class MainWindow(QMainWindow):
         self.comparison_chart.update_results(self.results)
         deterministic = self.results["deterministic"].metrics
         risk = self.results["risk_aware"].metrics
+        rolling = self.results["rolling_predictive"].metrics
         rows = [
             ("实际运行成本 / 元", "total_cost_yuan", 1),
             ("主网购电 / kWh", "grid_import_kwh", 1),
@@ -652,7 +658,7 @@ class MainWindow(QMainWindow):
         ]
         self.comparison_table.setRowCount(len(rows))
         for row, (label, key, digits) in enumerate(rows):
-            values = [label, f"{deterministic[key]:.{digits}f}", f"{risk[key]:.{digits}f}", f"{risk[key] - deterministic[key]:+.{digits}f}"]
+            values = [label, f"{deterministic[key]:.{digits}f}", f"{risk[key]:.{digits}f}", f"{rolling[key]:.{digits}f}"]
             for column, value in enumerate(values):
                 item = QTableWidgetItem(value)
                 if column:
@@ -664,6 +670,7 @@ class MainWindow(QMainWindow):
             ("time", "时间", 0),
             ("load_kw", "负荷 kW", 2),
             ("pv_forecast_kw", "光伏预测 kW", 2),
+            ("rolling_forecast_kw", "滚动预测 kW", 2),
             ("pv_actual_kw", "光伏实测 kW", 2),
             ("battery_kw", "储能 kW", 2),
             ("soc_pct", "SOC %", 1),
@@ -671,6 +678,10 @@ class MainWindow(QMainWindow):
             ("grid_import_kw", "购电 kW", 2),
             ("grid_export_kw", "上网 kW", 2),
             ("price_yuan_kwh", "电价 元/kWh", 2),
+            ("forecast_bias_kw", "EWMA偏差 kW", 2),
+            ("grid_loading_pct", "主网负载率 %", 1),
+            ("grid_status", "电网状态", 0),
+            ("replan_flag", "重优化", 0),
         ]
         frame = result.frame
         self.detail_table.setUpdatesEnabled(False)
@@ -680,7 +691,10 @@ class MainWindow(QMainWindow):
         for row in range(len(frame)):
             for column, (key, _, digits) in enumerate(columns):
                 raw = frame.iloc[row][key]
-                value = str(raw) if key == "time" else f"{float(raw):.{digits}f}"
+                if key in {"time", "grid_status", "replan_flag"}:
+                    value = str(raw) if key != "replan_flag" else ("是" if int(raw) else "否")
+                else:
+                    value = f"{float(raw):.{digits}f}"
                 item = QTableWidgetItem(value)
                 if key != "time":
                     item.setTextAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
@@ -854,11 +868,12 @@ class MainWindow(QMainWindow):
         indices = {
             "overview": 0,
             "replay": 1,
-            "topology": 2,
-            "comparison": 3,
-            "lab": 4,
-            "details": 5,
-            "report": 6,
+            "rolling": 2,
+            "topology": 3,
+            "comparison": 4,
+            "lab": 5,
+            "details": 6,
+            "report": 7,
         }
         self.tabs.setCurrentIndex(indices.get(tab_name, 0))
         if tab_name == "replay":

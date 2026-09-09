@@ -17,7 +17,7 @@ def parse_arguments() -> argparse.Namespace:
     )
     parser.add_argument(
         "--screenshot-tab",
-        choices=("overview", "replay", "topology", "comparison", "lab", "details", "report"),
+        choices=("overview", "replay", "rolling", "topology", "comparison", "lab", "details", "report"),
         default="overview",
         help="截图时自动切换到指定页面",
     )
@@ -60,7 +60,7 @@ def main() -> int:
 
     app = QApplication(sys.argv[:1])
     app.setApplicationName("Dong 微电网能源管理系统")
-    app.setApplicationVersion("1.3.0")
+    app.setApplicationVersion("1.4.0")
     app.setOrganizationName("SEU Course Design")
     windows_fonts = Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts"
     for font_file in ("msyh.ttc", "msyhbd.ttc"):

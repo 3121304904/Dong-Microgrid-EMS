@@ -35,8 +35,8 @@ class ReportChart(FigureCanvasQTAgg):
         self.setMinimumHeight(220)
 
     def update_results(self, baseline: DispatchResult, results: dict[str, DispatchResult]) -> None:
-        ordered = (baseline, results["deterministic"], results["risk_aware"])
-        labels = ("无储能基础", "确定性 P50", "风险感知")
+        ordered = (baseline, results["deterministic"], results["risk_aware"], results["rolling_predictive"])
+        labels = ("无储能基础", "确定性 P50", "风险感知", "滚动预测")
         self.figure.clear()
         axes = self.figure.subplots(1, 2, gridspec_kw={"wspace": 0.34})
 
@@ -91,7 +91,7 @@ class ReportPage(QWidget):
         heading = QHBoxLayout()
         title = QLabel("运行报告")
         title.setObjectName("sectionTitle")
-        subtitle = QLabel("基础方案、确定性与风险感知策略的统一结论视图")
+        subtitle = QLabel("基础方案、日前策略与滚动预测策略的统一结论视图")
         subtitle.setObjectName("muted")
         self.risk_badge = QLabel("风险实验未运行")
         self.risk_badge.setStyleSheet("color:#637083;background:#EDF2F3;padding:4px 8px;border-radius:3px;font-weight:700;")
@@ -139,8 +139,8 @@ class ReportPage(QWidget):
         splitter.setSizes([620, 360])
         layout.addWidget(splitter, 1)
 
-        self.table = QTableWidget(0, 4)
-        self.table.setHorizontalHeaderLabels(["指标", "无储能基础", "确定性 P50", "风险感知"])
+        self.table = QTableWidget(0, 5)
+        self.table.setHorizontalHeaderLabels(["指标", "无储能基础", "确定性 P50", "风险感知", "滚动预测"])
         self.table.verticalHeader().setVisible(False)
         self.table.setAlternatingRowColors(True)
         self.table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -172,7 +172,7 @@ class ReportPage(QWidget):
     def _render_table(self) -> None:
         if self.baseline is None or not self.results:
             return
-        ordered = (self.baseline, self.results["deterministic"], self.results["risk_aware"])
+        ordered = (self.baseline, self.results["deterministic"], self.results["risk_aware"], self.results["rolling_predictive"])
         rows = (
             ("实际运行成本 / 元", "total_cost_yuan", 1),
             ("主网购电 / kWh", "grid_import_kwh", 1),

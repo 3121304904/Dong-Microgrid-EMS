@@ -36,7 +36,7 @@ class V11FeatureTests(unittest.TestCase):
         settings = MonteCarloSettings(sample_count=20, seed=2026)
         first = run_monte_carlo(self.data, self.config, settings=settings)
         second = run_monte_carlo(self.data, self.config, settings=settings)
-        self.assertEqual(len(first.samples), settings.sample_count * 2)
+        self.assertEqual(len(first.samples), settings.sample_count * 3)
         self.assertTrue(first.samples.equals(second.samples))
         self.assertTrue(first.summary.equals(second.summary))
         self.assertTrue((first.summary.p05 <= first.summary.p50).all())

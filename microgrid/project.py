@@ -52,7 +52,7 @@ class ProjectDocument:
             )
         if not self.project_name.strip():
             raise ValueError("项目名称不能为空")
-        if self.strategy_key not in {"deterministic", "risk_aware"}:
+        if self.strategy_key not in {"deterministic", "risk_aware", "rolling_predictive"}:
             raise ValueError("项目中的调度策略无效")
         if not 50 <= self.confidence_pct <= 99:
             raise ValueError("项目中的光伏置信度必须在 50% 到 99% 之间")

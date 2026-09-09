@@ -44,13 +44,13 @@ class UiBehaviorTests(unittest.TestCase):
         self.assertEqual(page.current_index, 52)
         page.close()
 
-    def test_main_window_contains_seven_pages(self) -> None:
+    def test_main_window_contains_eight_pages(self) -> None:
         root = Path(__file__).resolve().parents[1]
         window = MainWindow(root)
-        self.assertEqual(window.tabs.count(), 7)
+        self.assertEqual(window.tabs.count(), 8)
         self.assertEqual(
             [window.tabs.tabText(index) for index in range(window.tabs.count())],
-            ["运行总览", "实时仿真", "微电网拓扑", "策略对比", "场景实验室", "96 时段明细", "运行报告"],
+            ["运行总览", "实时仿真", "滚动调度中心", "微电网拓扑", "策略对比", "场景实验室", "96 时段明细", "运行报告"],
         )
         window.close()
 

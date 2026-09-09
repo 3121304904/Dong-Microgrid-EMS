@@ -107,9 +107,9 @@ class ComparisonChart(FigureCanvasQTAgg):
     def update_results(self, results: dict[str, DispatchResult]) -> None:
         self.figure.clear()
         axes = self.figure.subplots(1, 3, gridspec_kw={"wspace": 0.38})
-        ordered = [results["deterministic"], results["risk_aware"]]
-        labels = ["确定性 P50", "风险感知"]
-        colors = ["#2B6CB0", "#18785C"]
+        ordered = [results["deterministic"], results["risk_aware"], results["rolling_predictive"]]
+        labels = ["确定性 P50", "风险感知", "滚动预测"]
+        colors = ["#2B6CB0", "#18785C", "#C46731"]
         specs = [
             ("total_cost_yuan", "实际运行成本", "元"),
             ("grid_import_kwh", "主网购电量", "kWh"),

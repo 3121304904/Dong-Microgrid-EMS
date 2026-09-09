@@ -1,6 +1,6 @@
-# Dong 微电网能源管理系统 v1.3
+# Dong 微电网能源管理系统 v1.4
 
-Dong 是面向程序设计课程大作业的 Windows 桌面应用，使用 Python、PySide6、Matplotlib、NumPy 和 Pandas 实现微电网典型日调度、光伏不确定性分析、仿真回放与结果导出。v1.3 在 v1.2 的核心闭环上修复标签页切换残影，并增加面板入场、结果刷新和交互反馈动画。
+Dong 是面向程序设计课程大作业的 Windows 桌面应用，使用 Python、PySide6、Matplotlib、NumPy 和 Pandas 实现微电网典型日调度、光伏不确定性分析、仿真回放与结果导出。v1.4 在日前计划基础上加入 EWMA 滚动预测、4 小时滚动动态规划和主网负载状态判断。
 
 > “实时仿真”页面回放的是模型计算结果，不接入真实硬件，也不表示在线监控数据。
 
@@ -26,7 +26,7 @@ dist\DongMicrogridEMS\DongMicrogridEMS.exe
 
 完整图文说明、录屏脚本、数据格式与故障排查见 [USER_MANUAL.md](USER_MANUAL.md)。
 
-## v1.3 功能
+## v1.4 功能
 
 - 96 个 15 分钟时段的确定性动态规划调度。
 - 光伏 P50、置信区间、P 下界风险感知计划和实时偏差补偿。
@@ -35,7 +35,10 @@ dist\DongMicrogridEMS\DongMicrogridEMS.exe
 - 50Hertz 德国区域光伏 2025 年度数据：365 个日期可选，自动处理 92/97 点夏令时日期。
 - 透明日前预测：使用过去 14 天同一时刻中位数；软件明确标注这不是官方预测值。
 - 页面淡入、KPI 更新脉冲和按钮点击反馈动画，不改变布局尺寸。
-- 七个页面：运行总览、实时仿真、微电网拓扑、策略对比、场景实验室、96 时段明细、运行报告。
+- 八个页面：运行总览、实时仿真、滚动调度中心、微电网拓扑、策略对比、场景实验室、96 时段明细、运行报告。
+- 三种可比较策略：确定性 P50、风险感知 P 下界、滚动预测调度（4h MPC）。
+- 每小时重规划：使用过去已发生的光伏预测误差更新 EWMA 偏差，并修正未来 4 小时预测。
+- 电网状态判断：正常、电网紧张、高价削峰、保供告警，并记录重优化原因。
 - Monte Carlo 相关光伏误差分析，默认 200 个场景和随机种子 2026。
 - 储能或光伏容量敏感性分析，默认 7 个等距方案点。
 - `.dong` 项目新建、打开、保存、未保存提示和版本校验。
@@ -45,7 +48,7 @@ dist\DongMicrogridEMS\DongMicrogridEMS.exe
 ## 工程结构
 
 ```text
-Dong_v1.3/
+Dong_v1.4/
 ├─ main.py
 ├─ microgrid/
 │  ├─ models.py             # 组件与场景模型
@@ -77,7 +80,7 @@ $env:PYTHONNOUSERSITE='1'
 .\.venv\Scripts\python.exe main.py --screenshot docs\screenshots\replay.png --screenshot-tab replay --window-size 1500x920
 ```
 
-`--screenshot-tab` 支持 `overview`、`replay`、`topology`、`comparison`、`lab`、`details` 和 `report`。
+`--screenshot-tab` 支持 `overview`、`replay`、`rolling`、`topology`、`comparison`、`lab`、`details` 和 `report`。
 
 构建文件夹版 EXE：
 
@@ -89,4 +92,4 @@ $env:PYTHONNOUSERSITE='1'
 
 ## 模型边界
 
-v1.3 面向课程演示，不包含真实硬件通讯、多日滚动调度、SQLite、柴油机整数启停约束或 MPC。50Hertz 文件是区域光伏功率估算曲线，日前预测由历史同刻中位数构造，不应在答辩时描述为官方预测准确率评估。
+v1.4 面向课程演示，不包含真实硬件通讯、多日调度、SQLite、柴油机整数启停约束或真实在线 MPC。滚动调度中心是离线回放：它按时间顺序只读取已经发生的光伏数据，不读取未来实测值。50Hertz 文件是区域光伏功率估算曲线，日前预测由历史同刻中位数构造，不应在答辩时描述为官方预测准确率评估。

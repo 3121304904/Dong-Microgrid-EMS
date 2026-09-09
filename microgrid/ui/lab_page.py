@@ -58,13 +58,13 @@ class MonteCarloChart(FigureCanvasQTAgg):
     def update_result(self, result: MonteCarloResult) -> None:
         self.figure.clear()
         axes = self.figure.subplots(1, 2, gridspec_kw={"wspace": 0.34})
-        strategies = (("deterministic", "确定性 P50", "#2B6CB0"), ("risk_aware", "风险感知", "#18785C"))
+        strategies = (("deterministic", "确定性 P50", "#2B6CB0"), ("risk_aware", "风险感知", "#18785C"), ("rolling_predictive", "滚动预测", "#C46731"))
         cost_values = [
             result.samples.loc[result.samples.strategy_key == key, "total_cost_yuan"].to_numpy()
             for key, _, _ in strategies
         ]
         boxes = axes[0].boxplot(cost_values, patch_artist=True, widths=0.52)
-        axes[0].set_xticks([1, 2], [item[1] for item in strategies])
+        axes[0].set_xticks(range(1, len(strategies) + 1), [item[1] for item in strategies])
         for patch, (_, _, color) in zip(boxes["boxes"], strategies):
             patch.set_facecolor(color)
             patch.set_alpha(0.78)
@@ -192,7 +192,7 @@ class LabPage(QWidget):
         self.mc_samples.setRange(20, 2000)
         self.mc_samples.setValue(200)
         self.mc_samples.setSingleStep(20)
-        self.mc_samples.setToolTip("每个样本都执行确定性和风险感知两套固定日前计划")
+        self.mc_samples.setToolTip("每个样本都执行确定性、风险感知和滚动预测三套策略")
         controls.addWidget(self.mc_samples)
         controls.addWidget(QLabel("随机种子"))
         self.mc_seed = QSpinBox()
@@ -203,7 +203,7 @@ class LabPage(QWidget):
         controls.addStretch()
         self.mc_run_button = QPushButton("运行 Monte Carlo")
         self.mc_run_button.setObjectName("primaryButton")
-        self.mc_run_button.setToolTip("在后台生成相关光伏误差场景并公平比较两种计划")
+        self.mc_run_button.setToolTip("在后台生成相关光伏误差场景并公平比较三种策略")
         self.mc_run_button.clicked.connect(self.start_monte_carlo)
         controls.addWidget(self.mc_run_button)
         layout.addLayout(controls)

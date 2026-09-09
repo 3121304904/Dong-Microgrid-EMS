@@ -51,7 +51,8 @@ def build_report_conclusion(
 ) -> str:
     deterministic = results["deterministic"]
     risk = results["risk_aware"]
-    cheapest = min((deterministic, risk), key=lambda item: item.metrics["total_cost_yuan"])
+    rolling = results.get("rolling_predictive", risk)
+    cheapest = min((deterministic, risk, rolling), key=lambda item: item.metrics["total_cost_yuan"])
     saving = baseline.metrics["total_cost_yuan"] - cheapest.metrics["total_cost_yuan"]
     saving_pct = 100.0 * saving / max(baseline.metrics["total_cost_yuan"], 1e-9)
     parts = [
@@ -73,6 +74,15 @@ def build_report_conclusion(
                 f"在 {monte_carlo.settings.sample_count} 个随机光伏场景中，风险感知策略成本"
                 f"中位数为 {value.p50:.1f} 元，P95 为 {value.p95:.1f} 元。"
             )
+        rolling_row = monte_carlo.summary[
+            (monte_carlo.summary.strategy_key == "rolling_predictive")
+            & (monte_carlo.summary.metric == "total_cost_yuan")
+        ]
+        if not rolling_row.empty:
+            value = rolling_row.iloc[0]
+            parts.append(
+                f"滚动预测策略成本中位数为 {value.p50:.1f} 元，P95 为 {value.p95:.1f} 元。"
+            )
     return "".join(parts)
 
 
@@ -81,9 +91,9 @@ def _comparison_chart(
     results: dict[str, DispatchResult],
     target: Path,
 ) -> None:
-    ordered = [baseline, results["deterministic"], results["risk_aware"]]
-    labels = ["基础方案", "确定性 P50", "风险感知"]
-    colors = ["#7B8794", "#2B6CB0", "#18785C"]
+    ordered = [baseline, results["deterministic"], results["risk_aware"], results["rolling_predictive"]]
+    labels = ["基础方案", "确定性 P50", "风险感知", "滚动预测"]
+    colors = ["#7B8794", "#2B6CB0", "#18785C", "#C46731"]
     specs = [
         ("total_cost_yuan", "运行成本", "元"),
         ("grid_import_kwh", "主网购电", "kWh"),
@@ -139,10 +149,10 @@ def _monte_carlo_chart(result: MonteCarloResult, target: Path) -> None:
     axis = figure.subplots()
     groups = [
         result.samples[result.samples.strategy_key == key].total_cost_yuan.to_numpy()
-        for key in ("deterministic", "risk_aware")
+        for key in ("deterministic", "risk_aware", "rolling_predictive")
     ]
-    box = axis.boxplot(groups, tick_labels=["确定性 P50", "风险感知"], patch_artist=True)
-    for patch, color in zip(box["boxes"], ("#7DB0E2", "#68B79F")):
+    box = axis.boxplot(groups, tick_labels=["确定性 P50", "风险感知", "滚动预测"], patch_artist=True)
+    for patch, color in zip(box["boxes"], ("#7DB0E2", "#68B79F", "#E6A16A")):
         patch.set_facecolor(color)
     axis.set_title("Monte Carlo 运行成本分布", loc="left", fontweight="bold")
     axis.set_ylabel("元")
@@ -222,7 +232,7 @@ def export_report_bundle(
         chart_paths.append(path)
 
     comparison_rows = []
-    for item in (baseline, results["deterministic"], results["risk_aware"]):
+    for item in (baseline, results["deterministic"], results["risk_aware"], results["rolling_predictive"]):
         m = item.metrics
         comparison_rows.append(
             f"| {item.strategy_name} | {m['total_cost_yuan']:.1f} | "
@@ -289,11 +299,13 @@ def export_report_bundle(
             "baseline": baseline.metrics,
             "deterministic": results["deterministic"].metrics,
             "risk_aware": results["risk_aware"].metrics,
+            "rolling_predictive": results["rolling_predictive"].metrics,
         },
         "cost_breakdown": {
             "baseline": baseline.cost_breakdown,
             "deterministic": results["deterministic"].cost_breakdown,
             "risk_aware": results["risk_aware"].cost_breakdown,
+            "rolling_predictive": results["rolling_predictive"].cost_breakdown,
         },
         "conclusion": conclusion,
     }

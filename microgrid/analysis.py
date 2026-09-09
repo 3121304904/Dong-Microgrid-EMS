@@ -61,7 +61,7 @@ class SensitivitySettings:
             raise ValueError("分析范围必须满足 0 < 最小值 < 最大值")
         if not 3 <= self.points <= 15:
             raise ValueError("方案点数必须在 3 到 15 之间")
-        if self.strategy_key not in {"deterministic", "risk_aware"}:
+        if self.strategy_key not in {"deterministic", "risk_aware", "rolling_predictive"}:
             raise ValueError("敏感性分析策略无效")
 
 
@@ -127,14 +127,17 @@ def run_monte_carlo(
     settings.validate()
     data.validate()
     config.validate()
-    plans = {
+    fixed_plans = {
         key: prepare_dispatch_plan(data, config, key, confidence_pct)
         for key in ("deterministic", "risk_aware")
     }
     nominal = {
         key: execute_dispatch_plan(data, config, plan)
-        for key, plan in plans.items()
+        for key, plan in fixed_plans.items()
     }
+    nominal["rolling_predictive"] = run_strategy(
+        data, config, "rolling_predictive", confidence_pct
+    )
     pv_samples = _generate_correlated_pv_samples(data, config, settings)
     rows: list[dict[str, float | int | str]] = []
     total = settings.sample_count
@@ -148,13 +151,20 @@ def run_monte_carlo(
             actual_kw,
             f"Monte Carlo / {index + 1}",
         )
-        for key, plan in plans.items():
-            metrics = execute_dispatch_plan(sample_data, config, plan).metrics
+        for key in ("deterministic", "risk_aware", "rolling_predictive"):
+            if key == "rolling_predictive":
+                sample_result = run_strategy(sample_data, config, key, confidence_pct)
+                strategy_name = sample_result.strategy_name
+                metrics = sample_result.metrics
+            else:
+                plan = fixed_plans[key]
+                strategy_name = plan.strategy_name
+                metrics = execute_dispatch_plan(sample_data, config, plan).metrics
             rows.append(
                 {
                     "sample": index + 1,
                     "strategy_key": key,
-                    "strategy_name": plan.strategy_name,
+                    "strategy_name": strategy_name,
                     "total_cost_yuan": metrics["total_cost_yuan"],
                     "grid_import_kwh": metrics["grid_import_kwh"],
                     "min_soc_pct": metrics["min_soc_pct"],
@@ -176,7 +186,7 @@ def run_monte_carlo(
         "unserved_kwh": "失负荷 / kWh",
         "carbon_kg": "碳排放 / kgCO2",
     }
-    for key in ("deterministic", "risk_aware"):
+    for key in ("deterministic", "risk_aware", "rolling_predictive"):
         subset = samples[samples.strategy_key == key]
         for metric, label in metric_names.items():
             values = subset[metric].to_numpy(dtype=float)
@@ -195,7 +205,7 @@ def run_monte_carlo(
             summary_rows.append(
                 {
                     "strategy_key": key,
-                    "strategy_name": plans[key].strategy_name,
+                    "strategy_name": nominal[key].strategy_name,
                     "metric": metric,
                     "metric_name": label,
                     "mean": float(np.mean(values)),

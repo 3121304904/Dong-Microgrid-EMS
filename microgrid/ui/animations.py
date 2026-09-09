@@ -1,4 +1,4 @@
-"""Small, non-layout-shifting Qt animations used by the v1.3 workbench."""
+"""Small, non-layout-shifting Qt animations used by the v1.4 workbench."""
 
 from __future__ import annotations
 
