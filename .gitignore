@@ -11,4 +11,5 @@ dist/
 output/*.csv
 output/*.json
 output/*.png
+output/*.log
 !output/.gitkeep

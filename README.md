@@ -1,6 +1,6 @@
-# Dong 微电网能源管理系统 v1.5
+# Dong 微电网能源管理系统 v1.6
 
-Dong 是面向程序设计课程大作业的 Windows 桌面应用，使用 Python、PySide6、Matplotlib、NumPy 和 Pandas 实现微电网典型日调度、光伏不确定性分析、仿真回放与结果导出。v1.5 在日前计划基础上提供 EWMA 滚动预测、4 小时滚动动态规划和主网负载状态判断，并修复四策略报告图表的尺寸不匹配问题。
+Dong 是面向程序设计课程大作业的 Windows 桌面应用，使用 Python、PySide6、Matplotlib、NumPy 和 Pandas 实现微电网典型日调度、光伏不确定性分析、仿真回放与结果导出。v1.6 在 v1.5 的日前计划、EWMA 滚动预测和 4 小时滚动动态规划基础上，修复了双击 `run.bat` 时窗口一闪而过的问题，并加入便携 EXE 优先启动、启动日志和失败停留提示。
 
 > “实时仿真”页面回放的是模型计算结果，不接入真实硬件，也不表示在线监控数据。
 
@@ -26,7 +26,7 @@ dist\DongMicrogridEMS\DongMicrogridEMS.exe
 
 完整图文说明、录屏脚本、数据格式与故障排查见 [USER_MANUAL.md](USER_MANUAL.md)。
 
-## v1.5 功能
+## v1.6 功能
 
 - 96 个 15 分钟时段的确定性动态规划调度。
 - 光伏 P50、置信区间、P 下界风险感知计划和实时偏差补偿。
@@ -45,11 +45,13 @@ dist\DongMicrogridEMS\DongMicrogridEMS.exe
 - `.dong` 项目新建、打开、保存、未保存提示和版本校验。
 - 报告包导出：Markdown、调度 CSV、指标 JSON、实验 CSV 与 PNG 图表。
 - 源码与文件夹版 Windows x64 EXE；支持自动页面截图冒烟测试。
+- `run.bat` 优先启动 `dist\DongMicrogridEMS\DongMicrogridEMS.exe`，不要求本机预装 Python。
+- 启动失败时保留 CMD 窗口并输出原因，诊断信息写入 `output\startup.log`。
 
 ## 工程结构
 
 ```text
-Dong_v1.5/
+Dong_v1.6/
 ├─ main.py
 ├─ microgrid/
 │  ├─ models.py             # 组件与场景模型
@@ -93,4 +95,4 @@ $env:PYTHONNOUSERSITE='1'
 
 ## 模型边界
 
-v1.5 面向课程演示，不包含真实硬件通讯、多日调度、SQLite、柴油机整数启停约束或真实在线 MPC。滚动调度中心是离线回放：它按时间顺序只读取已经发生的光伏数据，不读取未来实测值。50Hertz 文件是区域光伏功率估算曲线，日前预测由历史同刻中位数构造，不应在答辩时描述为官方预测准确率评估。
+v1.6 面向课程演示，不包含真实硬件通讯、多日调度、SQLite、柴油机整数启停约束或真实在线 MPC。滚动调度中心是离线回放：它按时间顺序只读取已经发生的光伏数据，不读取未来实测值。50Hertz 文件是区域光伏功率估算曲线，日前预测由历史同刻中位数构造，不应在答辩时描述为官方预测准确率评估。
