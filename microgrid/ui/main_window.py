@@ -102,7 +102,7 @@ class MainWindow(QMainWindow):
         self._analysis_invalidated = True
         self._building = True
 
-        self.setWindowTitle("Dong 微电网能源管理系统 v1.4")
+        self.setWindowTitle("Dong 微电网能源管理系统 v1.5")
         self.setMinimumSize(1180, 760)
         self.resize(1500, 920)
         self.setStyleSheet(APP_STYLE)
@@ -470,12 +470,12 @@ class MainWindow(QMainWindow):
 
     def _refresh_window_title(self) -> None:
         marker = " *" if self.modified else ""
-        self.setWindowTitle(f"{self.project_name}{marker} - Dong 微电网能源管理系统 v1.4")
+        self.setWindowTitle(f"{self.project_name}{marker} - Dong 微电网能源管理系统 v1.5")
         if hasattr(self, "project_meta"):
             state = "未保存" if self.modified else "已保存"
             if self.project_path is None and not self.modified:
                 state = "新项目"
-                self.project_meta.setText(f"{self.project_name}{marker}  |  {state}  |  v1.4")
+                self.project_meta.setText(f"{self.project_name}{marker}  |  {state}  |  v1.5")
 
     def _set_modified(self, modified: bool = True) -> None:
         if self._building:

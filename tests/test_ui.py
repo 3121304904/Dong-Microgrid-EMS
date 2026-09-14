@@ -10,9 +10,10 @@ from PySide6.QtWidgets import QApplication
 
 from microgrid.data import SCENARIO_NAMES, generate_typical_day
 from microgrid.models import default_config
-from microgrid.scheduler import run_strategy
+from microgrid.scheduler import run_all_strategies, run_baseline, run_strategy
 from microgrid.ui.main_window import MainWindow
 from microgrid.ui.replay_page import ReplayPage
+from microgrid.ui.report_page import ReportChart
 
 
 class UiBehaviorTests(unittest.TestCase):
@@ -53,6 +54,17 @@ class UiBehaviorTests(unittest.TestCase):
             ["运行总览", "实时仿真", "滚动调度中心", "微电网拓扑", "策略对比", "场景实验室", "96 时段明细", "运行报告"],
         )
         window.close()
+
+    def test_report_chart_accepts_baseline_and_three_strategies(self) -> None:
+        baseline = run_baseline(self.data, self.config)
+        results = run_all_strategies(self.data, self.config, 90.0)
+        chart = ReportChart()
+        chart.update_results(baseline, results)
+        self.assertEqual(len(chart.figure.axes), 2)
+        # Each of the three stacked series must contain all four strategies.
+        self.assertEqual(len(chart.figure.axes[0].patches), 12)
+        self.assertEqual(len(chart.figure.axes[1].patches), 12)
+        chart.close()
 
 
 if __name__ == "__main__":

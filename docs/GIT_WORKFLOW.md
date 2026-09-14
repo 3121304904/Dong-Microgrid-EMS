@@ -8,7 +8,8 @@
 - v1.3 基线提交：`fc2137a` — `chore: initialize Dong microgrid project v1.3`
 - v1.4 功能提交：`8276182` — `feat: add rolling forecast and grid-aware dispatch v1.4.0`
 - v1.4 标签：`v1.4.0`
-- 仓库目录：`Code/Dong_v1.4`
+- v1.5 计划提交：`fix: repair report chart and explain rolling strategy v1.5.0`
+- 仓库目录：`Code/Dong_v1.5`
 
 ## 日常提交步骤
 

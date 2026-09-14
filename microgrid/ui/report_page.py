@@ -41,7 +41,7 @@ class ReportChart(FigureCanvasQTAgg):
         axes = self.figure.subplots(1, 2, gridspec_kw={"wspace": 0.34})
 
         categories = (("电网购电", "#2B6CB0"), ("柴油发电", "#C46731"), ("储能损耗", "#18785C"))
-        bottom = np.zeros(3)
+        bottom = np.zeros(len(ordered))
         for category, color in categories:
             values = np.array([max(0.0, item.cost_breakdown.get(category, 0.0)) for item in ordered])
             axes[0].bar(labels, values, bottom=bottom, label=category, color=color, width=0.58)
@@ -60,7 +60,7 @@ class ReportChart(FigureCanvasQTAgg):
             ("主网购电", "#2B6CB0", [item.metrics["grid_import_kwh"] for item in ordered]),
             ("柴油发电", "#C46731", [item.metrics["diesel_energy_kwh"] for item in ordered]),
         )
-        source_bottom = np.zeros(3)
+        source_bottom = np.zeros(len(ordered))
         for name, color, values in source_specs:
             numeric = np.asarray(values, dtype=float)
             axes[1].bar(labels, numeric, bottom=source_bottom, label=name, color=color, width=0.58)

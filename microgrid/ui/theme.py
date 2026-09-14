@@ -49,6 +49,16 @@ QFrame#section, QFrame#chartPanel, QFrame#tablePanel {
     border: 1px solid #DDE4E8;
     border-radius: 6px;
 }
+QFrame#rollingExplainer {
+    background: #F8FBFA;
+    border: 1px solid #CEDFDB;
+    border-radius: 6px;
+}
+QLabel#rollingArrow {
+    color: #8B97A8;
+    font-size: 20px;
+    font-weight: 700;
+}
 QFrame#kpiCard {
     background: #FFFFFF;
     border: 1px solid #DDE4E8;
