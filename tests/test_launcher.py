@@ -13,11 +13,11 @@ class LauncherScriptTests(unittest.TestCase):
         self.assertIn("pause", text.lower())
         self.assertIn(".venv\\Scripts\\python.exe", text)
 
-    def test_version_is_1_6(self):
+    def test_version_is_1_7(self):
         main_text = (ROOT / "main.py").read_text(encoding="utf-8")
         window_text = (ROOT / "microgrid" / "ui" / "main_window.py").read_text(encoding="utf-8")
-        self.assertIn('setApplicationVersion("1.6.0")', main_text)
-        self.assertIn("v1.6", window_text)
+        self.assertIn('setApplicationVersion("1.7.0")', main_text)
+        self.assertIn("v1.7", window_text)
 
 
 if __name__ == "__main__":

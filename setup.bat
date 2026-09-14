@@ -28,6 +28,6 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo Setup completed. Double-click run.bat to launch Dong v1.6.
+echo Setup completed. Double-click run.bat to launch Dong v1.7.
 pause
 endlocal

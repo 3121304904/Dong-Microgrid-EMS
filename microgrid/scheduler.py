@@ -8,7 +8,8 @@ defence while still producing a genuine minimum-cost schedule.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
 from statistics import NormalDist
 
 import numpy as np
@@ -33,6 +34,7 @@ class DispatchResult:
     metrics: dict[str, float]
     cost_breakdown: dict[str, float]
     confidence_pct: float
+    diagnostics: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass
@@ -55,7 +57,9 @@ class RollingPredictiveSettings:
     horizon_steps: int = 16
     replan_interval_steps: int = 4
     ewma_alpha: float = 0.35
+    variance_alpha: float = 0.20
     forecast_decay_per_hour: float = 0.82
+    risk_blend: float = 0.25
 
 
 def build_forecast_envelope(
@@ -490,6 +494,12 @@ def _rolling_strategy_frame(
     max_energy = b.capacity_kwh * b.max_soc
     energy = b.capacity_kwh * b.initial_soc
     bias = 0.0
+    variance = 0.0
+    error_series = np.zeros(TIME_STEPS)
+    variance_series = np.zeros(TIME_STEPS)
+    horizon_end = np.zeros(TIME_STEPS, dtype=int)
+    plan_window_start = np.full(TIME_STEPS, -1, dtype=int)
+    plan_window_end = np.full(TIME_STEPS, -1, dtype=int)
     planned_battery = np.zeros(TIME_STEPS)
     planned_diesel = np.zeros(TIME_STEPS)
     rolling_forecast = np.zeros(TIME_STEPS)
@@ -513,8 +523,11 @@ def _rolling_strategy_frame(
         # happened.  The first point has no past error and keeps bias at 0.
         if t > 0:
             error = float(data.pv_actual_kw[t - 1] - data.pv_forecast_kw[t - 1])
+            error_series[t] = error
             bias = settings.ewma_alpha * error + (1.0 - settings.ewma_alpha) * bias
+            variance = settings.variance_alpha * (error - bias) ** 2 + (1.0 - settings.variance_alpha) * variance
         bias_series[t] = bias
+        variance_series[t] = variance
         must_replan = current_plan is None or t % settings.replan_interval_steps == 0
         if must_replan:
             horizon = min(settings.horizon_steps, TIME_STEPS - t)
@@ -523,6 +536,9 @@ def _rolling_strategy_frame(
                 settings.forecast_decay_per_hour, offsets
             )
             corrected = np.clip(corrected, 0.0, config.pv.capacity_kw)
+            horizon_end[t] = t + horizon - 1
+            plan_window_start[t] = t
+            plan_window_end[t] = t + horizon - 1
             current_plan = _optimize_horizon(
                 data,
                 config,
@@ -615,6 +631,11 @@ def _rolling_strategy_frame(
             "rolling_forecast_kw": rolling_forecast,
             "rolling_lower_kw": rolling_lower,
             "forecast_bias_kw": bias_series,
+            "forecast_error_kw": error_series,
+            "forecast_sigma_kw": np.sqrt(np.maximum(variance_series, 0.0)),
+            "horizon_end_index": horizon_end,
+            "plan_window_start": plan_window_start,
+            "plan_window_end": plan_window_end,
             "price_yuan_kwh": data.buy_price_yuan_kwh,
             "battery_plan_kw": planned_battery,
             "diesel_plan_kw": planned_diesel,
@@ -660,6 +681,24 @@ def _rolling_strategy_frame(
         - frame.grid_export_kw * config.grid.sell_price_yuan_kwh
         + frame.battery_kw.abs() * config.battery.cycle_cost_yuan_kwh
     )
+    frame.attrs["rolling_settings"] = {
+        "horizon_steps": settings.horizon_steps,
+        "replan_interval_steps": settings.replan_interval_steps,
+        "ewma_alpha": settings.ewma_alpha,
+        "variance_alpha": settings.variance_alpha,
+        "forecast_decay_per_hour": settings.forecast_decay_per_hour,
+        "risk_blend": settings.risk_blend,
+    }
+    frame.attrs["rolling_trace"] = [
+        {
+            "start_index": int(i),
+            "end_index": int(horizon_end[i]),
+            "bias_kw": float(bias_series[i]),
+            "sigma_kw": float(np.sqrt(max(variance_series[i], 0.0))),
+            "error_kw": float(error_series[i]),
+        }
+        for i in np.flatnonzero(replan_flag)
+    ]
     return frame
 
 
@@ -691,6 +730,7 @@ def run_rolling_predictive(
         metrics=metrics,
         cost_breakdown=breakdown,
         confidence_pct=float(np.clip(confidence_pct, 50.0, 99.0)),
+        diagnostics={"rolling_settings": frame.attrs.get("rolling_settings", {}), "rolling_trace": frame.attrs.get("rolling_trace", [])},
     )
 
 

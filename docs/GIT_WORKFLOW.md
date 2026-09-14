@@ -9,8 +9,8 @@
 - v1.4 功能提交：`8276182` — `feat: add rolling forecast and grid-aware dispatch v1.4.0`
 - v1.4 标签：`v1.4.0`
 - v1.5 提交：`fix: repair report chart and explain rolling strategy v1.5.0`
-- v1.6 提交建议：`fix: make run.bat launch portable EXE and keep startup diagnostics`
-- 当前仓库目录：`Code/Dong_v1.6`
+- v1.7 提交建议：`fix: make run.bat launch portable EXE and keep startup diagnostics`
+- 当前仓库目录：`Code/Dong_v1.7`
 
 ## 日常提交步骤
 

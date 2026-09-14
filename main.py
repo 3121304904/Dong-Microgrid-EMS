@@ -60,7 +60,7 @@ def main() -> int:
 
     app = QApplication(sys.argv[:1])
     app.setApplicationName("Dong 微电网能源管理系统")
-    app.setApplicationVersion("1.6.0")
+    app.setApplicationVersion("1.7.0")
     app.setOrganizationName("SEU Course Design")
     windows_fonts = Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts"
     for font_file in ("msyh.ttc", "msyhbd.ttc"):
